@@ -1,0 +1,51 @@
+{
+  "name": "logseq-transcriber",
+  "version": "0.2.0",
+  "description": "Transcribe audio files directly within Logseq using a powerful speech-to-text API.",
+  "main": "dist/index.html",
+  "author": "AI Assistant",
+  "license": "MIT",
+  "scripts": {
+    "dev": "parcel index.html --public-url ./",
+    "build": "parcel build --public-url . --no-source-maps index.html"
+  },
+  "dependencies": {
+    "@deepgram/sdk": "^3.3.3", 
+    "@logseq/libs": "^0.0.17"
+  },
+  "devDependencies": {
+    "parcel": "^2.9.3",
+    "buffer": "^6.0.3"
+  },
+  "logseq": {
+    "id": "logseq-transcriber",
+    "icon": "./icon.png",
+    "settings": [
+      {
+        "key": "apiKey",
+        "type": "string",
+        "title": "API Key",
+        "description": "Your API Key from Deepgram. Get one at [console.deepgram.com](https://console.deepgram.com/project/_/api-keys).",
+        "default": ""
+      },
+      {
+        "key": "model",
+        "type": "string",
+        "title": "Transcription Model",
+        "description": "Model to use (e.g., nova-3, whisper-large). See [Deepgram Models](https://developers.deepgram.com/docs/model) for options.",
+        "default": "nova-3"
+      },
+      {
+        "key": "language",
+        "type": "enum",
+        "title": "Audio Language",
+        "description": "Select the primary language of the audio or choose 'Auto-detect'. See [Supported Languages](https://developers.deepgram.com/docs/models-languages-overview).",
+        "default": "auto-detect",
+        "enumPicker": "select",
+        "enumChoices": [
+          "auto-detect", "en", "es", "fr", "de", "it", "pt", "nl", "hi", "ja", "zh", "ko", "ru", "uk", "sv", "tr", "id"
+        ]
+      }
+    ]
+  }
+}
