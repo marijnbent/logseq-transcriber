@@ -1,6 +1,8 @@
 import '@logseq/libs';
 import { createClient, DeepgramClient, PrerecordedTranscriptionResponse, PrerecordedTranscriptionOptions } from "@deepgram/sdk";
 import { Buffer } from "buffer";
+import settings from './settings';
+declare const logseq: any;
 
 const PLUGIN_ID = 'logseq-transcriber';
 
@@ -19,21 +21,22 @@ interface PluginSettings {
 
 function getSettings(): PluginSettings {
   console.log(`[${PLUGIN_ID}] getSettings called.`);
-  const apiKey = logseq.settings?.apiKey;
-  const model = logseq.settings?.model || "nova-3";
-  let languageSetting = logseq.settings?.language || "auto-detect";
-  
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+  const lsSettings = (logseq.settings as any) || {};
+  const apiKey = lsSettings.apiKey as string;
+  const model = (lsSettings.model as string) || "nova-3";
+  const languageSetting = (lsSettings.language as string) || "auto-detect";
+
+  if (!apiKey || apiKey.trim() === '') {
     console.warn(`[${PLUGIN_ID}] API Key is not set or empty.`);
-    logseq.App.showMsg('Transcription API Key not set. Please configure it in plugin settings.', 'error');
-    logseq.App.openSettingItem(PLUGIN_ID, 'apiKey'); 
+    (logseq.App as any).showMsg('Transcription API Key not set. Please configure it in plugin settings.', 'error');
+    (logseq.App as any).openSettingItem(PLUGIN_ID, 'apiKey');
     return { apiKey: null, model, language: undefined };
   }
   console.log(`[${PLUGIN_ID}] API Key found. Model: ${model}, Language Setting: ${languageSetting}`);
-  return { 
-    apiKey, 
-    model, 
-    language: languageSetting === "auto-detect" || languageSetting.trim() === "" ? undefined : languageSetting.trim() 
+  return {
+    apiKey,
+    model,
+    language: languageSetting === "auto-detect" ? undefined : languageSetting.trim(),
   };
 }
 
@@ -77,7 +80,7 @@ async function transcribeAudioSource(
 
     const transcription = result?.results?.channels[0]?.alternatives[0]?.transcript;
     if (transcription) {
-      logseq.App.showMsg(`Transcription for "${source.name}" successful!`, 'success');
+      (logseq.App as any).showMsg(`Transcription for "${source.name}" successful!`, 'success');
       console.log(`[${PLUGIN_ID}] Transcription successful for "${source.name}".`);
       return transcription;
     } else {
@@ -86,7 +89,7 @@ async function transcribeAudioSource(
     }
   } catch (err: any) {
     console.error(`[${PLUGIN_ID}] Full error in transcribeAudioSource for ${source.name}:`, err);
-    logseq.App.showMsg(`Transcription failed for "${source.name}": ${err.message || 'Unknown error'}`, 'error');
+    (logseq.App as any).showMsg(`Transcription failed for "${source.name}": ${err.message || 'Unknown error'}`, 'error');
     return null;
   } finally {
     if (button) button.textContent = '🎙️ Transcribe';
@@ -134,7 +137,7 @@ function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, block
     const audioName = audioElement.title || audioSrc.substring(audioSrc.lastIndexOf('/') + 1) || 'audio_file';
     
     try {
-      logseq.App.showMsg(`Fetching audio "${audioName}" for transcription...`, 'info');
+      (logseq.App as any).showMsg(`Fetching audio "${audioName}" for transcription...`, 'info');
       console.log(`[${PLUGIN_ID}] Fetching audio from: ${audioSrc}`);
       const response = await fetch(audioSrc);
       if (!response.ok) {
@@ -162,7 +165,7 @@ function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, block
       }
     } catch (err: any) {
         console.error(`[${PLUGIN_ID}] Error in button click handler for ${audioName}:`, err);
-        logseq.App.showMsg(`Error transcribing ${audioName}: ${err.message || 'Unknown error'}`, 'error');
+        (logseq.App as any).showMsg(`Error transcribing ${audioName}: ${err.message || 'Unknown error'}`, 'error');
         button.textContent = '🎙️ Transcribe'; 
     } finally {
       isTranscribing = false;
@@ -216,7 +219,7 @@ function scanAndAddButtons() {
 
 async function main() {
   console.log(`[${PLUGIN_ID}] Plugin main function starting.`);
-  logseq.App.showMsg('🎙️ Logseq Transcriber Plugin Loaded');
+  (logseq.App as any).showMsg('🎙️ Logseq Transcriber Plugin Loaded');
 
   logseq.provideStyle(`
     .logseq-transcriber-audio-btn {
@@ -279,6 +282,6 @@ async function main() {
   console.log(`[${PLUGIN_ID}] Plugin main function finished setup.`);
 }
 
-logseq.ready(main).catch(err => {
+logseq.useSettingsSchema(settings).ready(main).catch(err => {
   console.error(`[${PLUGIN_ID}] Error in logseq.ready:`, err);
 });

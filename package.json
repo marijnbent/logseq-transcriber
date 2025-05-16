@@ -19,49 +19,6 @@
   "logseq": {
     "id": "logseq-transcriber",
     "icon": "./icon.png",
-    "main": "dist/index.html",
-    "settings": [
-      {
-        "key": "apiKey",
-        "type": "string",
-        "title": "API Key",
-        "description": "Your API Key from Deepgram. Get one at [console.deepgram.com](https://console.deepgram.com/project/_/api-keys).",
-        "default": ""
-      },
-      {
-        "key": "model",
-        "type": "string",
-        "title": "Transcription Model",
-        "description": "Model to use (e.g., nova-3, whisper-large). See [Deepgram Models documentation](https://developers.deepgram.com/docs/model) for options.",
-        "default": "nova-3"
-      },
-      {
-        "key": "language",
-        "type": "enum",
-        "title": "Audio Language",
-        "description": "Select the primary language of the audio or choose 'Auto-detect'. See [Supported Languages](https://developers.deepgram.com/docs/models-languages-overview).",
-        "default": "auto-detect",
-        "enumPicker": "select",
-        "enumChoices": [
-          "auto-detect",
-          "en",
-          "es",
-          "fr",
-          "de",
-          "it",
-          "pt",
-          "nl",
-          "hi",
-          "ja",
-          "zh",
-          "ko",
-          "ru",
-          "uk",
-          "sv",
-          "tr",
-          "id"
-        ]
-      }
-    ]
+    "main": "dist/index.html"
   }
 }
