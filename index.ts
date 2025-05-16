@@ -2,8 +2,13 @@ import '@logseq/libs';
 import { createClient, DeepgramClient, PrerecordedTranscriptionResponse, PrerecordedTranscriptionOptions } from "@deepgram/sdk";
 import { Buffer } from "buffer";
 
+const PLUGIN_ID = 'logseq-transcriber';
+
+console.log(`[${PLUGIN_ID}] Script loaded`);
+
 if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
   window.Buffer = Buffer;
+  console.log(`[${PLUGIN_ID}] Buffer polyfilled.`);
 }
 
 interface PluginSettings {
@@ -13,15 +18,18 @@ interface PluginSettings {
 }
 
 function getSettings(): PluginSettings {
+  console.log(`[${PLUGIN_ID}] getSettings called.`);
   const apiKey = logseq.settings?.apiKey;
-  const model = logseq.settings?.model || "nova-3"; // Default to nova-3
+  const model = logseq.settings?.model || "nova-3";
   let languageSetting = logseq.settings?.language || "auto-detect";
   
   if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
+    console.warn(`[${PLUGIN_ID}] API Key is not set or empty.`);
     logseq.App.showMsg('Transcription API Key not set. Please configure it in plugin settings.', 'error');
-    logseq.App.openSettingItem('logseq-transcriber', 'apiKey');
+    logseq.App.openSettingItem(PLUGIN_ID, 'apiKey'); 
     return { apiKey: null, model, language: undefined };
   }
+  console.log(`[${PLUGIN_ID}] API Key found. Model: ${model}, Language Setting: ${languageSetting}`);
   return { 
     apiKey, 
     model, 
@@ -36,6 +44,7 @@ async function transcribeAudioSource(
     language?: string,
     button?: HTMLButtonElement
 ): Promise<string | null> {
+  console.log(`[${PLUGIN_ID}] transcribeAudioSource called for: ${source.name}, Model: ${model}, Lang: ${language || 'auto-detect'}`);
   if (button) button.textContent = '🎙️...';
 
   try {
@@ -50,8 +59,10 @@ async function transcribeAudioSource(
     if (language) {
       options.language = language;
     } else {
-      options.detect_language = true; // Enable language detection if no language is specified
+      options.detect_language = true;
+      console.log(`[${PLUGIN_ID}] Language detection enabled.`);
     }
+    console.log(`[${PLUGIN_ID}] Deepgram options:`, options);
 
     const { result, error }: PrerecordedTranscriptionResponse = await deepgram.listen.prerecorded.transcribeFile(
       source.buffer,
@@ -59,19 +70,23 @@ async function transcribeAudioSource(
     );
 
     if (error) {
+      console.error(`[${PLUGIN_ID}] Deepgram API error:`, error);
       throw error;
     }
+    console.log(`[${PLUGIN_ID}] Deepgram API result:`, result);
 
     const transcription = result?.results?.channels[0]?.alternatives[0]?.transcript;
     if (transcription) {
       logseq.App.showMsg(`Transcription for "${source.name}" successful!`, 'success');
+      console.log(`[${PLUGIN_ID}] Transcription successful for "${source.name}".`);
       return transcription;
     } else {
-      throw new Error('No transcription result found.');
+      console.warn(`[${PLUGIN_ID}] No transcription result found in Deepgram response.`);
+      throw new Error('No transcription result found from Deepgram.');
     }
   } catch (err: any) {
-    console.error(`Transcription Error for ${source.name}:`, err);
-    logseq.App.showMsg(`Transcription failed for "${source.name}": ${err.message || err}`, 'error');
+    console.error(`[${PLUGIN_ID}] Full error in transcribeAudioSource for ${source.name}:`, err);
+    logseq.App.showMsg(`Transcription failed for "${source.name}": ${err.message || 'Unknown error'}`, 'error');
     return null;
   } finally {
     if (button) button.textContent = '🎙️ Transcribe';
@@ -79,12 +94,15 @@ async function transcribeAudioSource(
 }
 
 function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, blockUUID: string) {
+  console.log(`[${PLUGIN_ID}] addTranscribeButtonToAudioElement called for audio src: ${audioElement.src}, block: ${blockUUID}`);
   if (audioElement.dataset.transcriberButtonAdded === 'true') {
+    console.log(`[${PLUGIN_ID}] Button already added for ${audioElement.src}. Skipping.`);
     return; 
   }
 
   const settings = getSettings();
   if (!settings.apiKey) {
+    console.warn(`[${PLUGIN_ID}] No API key, cannot add transcribe button for ${audioElement.src}.`);
     return;
   }
 
@@ -101,9 +119,13 @@ function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, block
   button.addEventListener('click', async (e) => {
     e.stopPropagation();
     if (isTranscribing) return;
+    console.log(`[${PLUGIN_ID}] Transcribe button clicked for ${audioElement.src}`);
 
-    const currentSettings = getSettings();
-    if (!currentSettings.apiKey) return;
+    const currentSettings = getSettings(); 
+    if (!currentSettings.apiKey) {
+        console.warn(`[${PLUGIN_ID}] API Key missing at time of click.`);
+        return;
+    }
 
     isTranscribing = true;
     button.disabled = true;
@@ -113,13 +135,16 @@ function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, block
     
     try {
       logseq.App.showMsg(`Fetching audio "${audioName}" for transcription...`, 'info');
+      console.log(`[${PLUGIN_ID}] Fetching audio from: ${audioSrc}`);
       const response = await fetch(audioSrc);
       if (!response.ok) {
+        console.error(`[${PLUGIN_ID}] Failed to fetch audio: ${response.status} ${response.statusText}`);
         throw new Error(`Failed to fetch audio: ${response.status} ${response.statusText}`);
       }
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       const audioType = response.headers.get('content-type') || undefined;
+      console.log(`[${PLUGIN_ID}] Audio fetched. Size: ${buffer.length} bytes. Type: ${audioType}`);
 
       const transcription = await transcribeAudioSource(
         { buffer, name: audioName, type: audioType },
@@ -130,54 +155,67 @@ function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, block
       );
 
       if (transcription) {
+        console.log(`[${PLUGIN_ID}] Inserting transcription for ${blockUUID}: "${transcription.substring(0, 50)}..."`);
         await logseq.Editor.insertBlock(blockUUID, transcription, { sibling: true, focus: true });
+      } else {
+        console.warn(`[${PLUGIN_ID}] Transcription returned null for ${audioName}.`);
       }
     } catch (err: any) {
-        console.error(`Error in button click for ${audioName}:`, err);
-        logseq.App.showMsg(`Error transcribing ${audioName}: ${err.message || err}`, 'error');
-        button.textContent = '🎙️ Transcribe';
+        console.error(`[${PLUGIN_ID}] Error in button click handler for ${audioName}:`, err);
+        logseq.App.showMsg(`Error transcribing ${audioName}: ${err.message || 'Unknown error'}`, 'error');
+        button.textContent = '🎙️ Transcribe'; 
     } finally {
       isTranscribing = false;
       button.disabled = false;
+      console.log(`[${PLUGIN_ID}] Transcription process finished for ${audioName}.`);
     }
   });
 
-  const playerContainer = audioElement.closest('.audio-player-wrapper, .asset-audio, .asset-container');
+  const playerContainer = audioElement.closest('.audio-player-wrapper, .asset-audio, .asset-container, .block-content-inner');
   if (playerContainer && playerContainer.parentNode) {
-    playerContainer.parentNode.insertBefore(button, playerContainer.nextSibling);
+    // Attempt to place it more consistently relative to the player controls if possible
+    const controls = playerContainer.querySelector('audio'); // The audio element itself
+    if (controls && controls.parentNode) {
+        controls.parentNode.insertBefore(button, controls.nextSibling);
+    } else {
+        playerContainer.parentNode.insertBefore(button, playerContainer.nextSibling);
+    }
+    console.log(`[${PLUGIN_ID}] Transcribe button added for ${audioElement.src}.`);
   } else if (audioElement.parentNode) {
     audioElement.parentNode.insertBefore(button, audioElement.nextSibling);
+    console.log(`[${PLUGIN_ID}] Transcribe button added (fallback placement) for ${audioElement.src}.`);
   } else {
-    console.warn("Logseq Transcriber: Could not find suitable parent to insert transcribe button for:", audioElement);
+    console.warn(`[${PLUGIN_ID}] Could not find suitable parent to insert transcribe button for:`, audioElement);
   }
   audioElement.dataset.transcriberButtonAdded = 'true';
 }
 
 function scanAndAddButtons() {
-  const audioElements = parent.document.querySelectorAll('div.ls-block audio:not([data-transcriber-button-added="true"])');
+  console.log(`[${PLUGIN_ID}] scanAndAddButtons called.`);
+  // Query within the main Logseq document context
+  const audioElements = parent.document.querySelectorAll('div[blockid].ls-block audio:not([data-transcriber-button-added="true"])');
+  console.log(`[${PLUGIN_ID}] Found ${audioElements.length} audio elements to process.`);
   
   audioElements.forEach((audioElNode) => {
     const audioEl = audioElNode as HTMLAudioElement;
-    let currentElement: HTMLElement | null = audioEl;
-    let blockUUID: string | undefined = undefined;
-    let attempts = 0;
-
-    while (currentElement && attempts < 10) { 
-        if (currentElement.classList.contains('ls-block') && currentElement.getAttribute('blockid')) {
-            blockUUID = currentElement.getAttribute('blockid') || undefined;
-            break;
-        }
-        currentElement = currentElement.parentElement;
-        attempts++;
-    }
+    const blockElement = audioEl.closest('div.ls-block[blockid]'); // Ensure we get the blockid from the correct parent
     
-    if (blockUUID) {
-      addTranscribeButtonToAudioElement(audioEl, blockUUID);
+    if (blockElement) {
+        const blockUUID = blockElement.getAttribute('blockid');
+        if (blockUUID) {
+            console.log(`[${PLUGIN_ID}] Processing audio in block: ${blockUUID}`);
+            addTranscribeButtonToAudioElement(audioEl, blockUUID);
+        } else {
+            console.warn(`[${PLUGIN_ID}] Found audio element within .ls-block, but no blockid attribute.`, audioEl);
+        }
+    } else {
+      console.warn(`[${PLUGIN_ID}] Could not find parent .ls-block[blockid] for audio element:`, audioEl);
     }
   });
 }
 
 async function main() {
+  console.log(`[${PLUGIN_ID}] Plugin main function starting.`);
   logseq.App.showMsg('🎙️ Logseq Transcriber Plugin Loaded');
 
   logseq.provideStyle(`
@@ -192,6 +230,7 @@ async function main() {
       font-size: 0.75rem;
       padding: 1px 5px;
       margin-top: 2px;
+      margin-left: 5px; /* Ensure some space */
       vertical-align: middle;
     }
     .logseq-transcriber-audio-btn:hover {
@@ -204,25 +243,42 @@ async function main() {
     }
   `);
 
-  const observer = new MutationObserver(() => {
+  const observer = new MutationObserver((mutationsList) => {
+    // Debounce or throttle scanAndAddButtons if it becomes too frequent
+    console.log(`[${PLUGIN_ID}] MutationObserver triggered. Mutations:`, mutationsList.length);
     scanAndAddButtons();
   });
   
   const setupObserver = () => {
+    console.log(`[${PLUGIN_ID}] setupObserver called.`);
     const appContainer = parent.document.getElementById('app-container');
     if (appContainer) {
       observer.disconnect();
       observer.observe(appContainer, { childList: true, subtree: true });
+      console.log(`[${PLUGIN_ID}] MutationObserver observing #app-container.`);
       scanAndAddButtons(); 
     } else {
-      console.error("Logseq Transcriber: #app-container not found for MutationObserver.");
+      console.error(`[${PLUGIN_ID}] #app-container not found for MutationObserver.`);
     }
   };
   
+  // Initial setup and re-setup on route changes
   logseq.App.onRouteChanged(setupObserver);
-  setupObserver();
+  
+  // Attempt initial setup after a short delay in case Logseq UI isn't fully ready
+  setTimeout(setupObserver, 1000);
 
-  console.log('Logseq Transcriber plugin main function finished.');
+  // Also listen to sidebar changes as content might appear there
+  logseq.App.onSidebarVisibleChanged( ({ visible }) => {
+    if (visible) {
+        console.log(`[${PLUGIN_ID}] Sidebar became visible, scanning for audio.`);
+        setTimeout(scanAndAddButtons, 500); // Delay for sidebar content to render
+    }
+  });
+
+  console.log(`[${PLUGIN_ID}] Plugin main function finished setup.`);
 }
 
-logseq.ready(main).catch(console.error);
+logseq.ready(main).catch(err => {
+  console.error(`[${PLUGIN_ID}] Error in logseq.ready:`, err);
+});

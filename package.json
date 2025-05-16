@@ -1,8 +1,7 @@
 {
   "name": "logseq-transcriber",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Transcribe audio files directly within Logseq using a powerful speech-to-text API.",
-  "main": "dist/index.html",
   "author": "AI Assistant",
   "license": "MIT",
   "scripts": {
@@ -10,16 +9,17 @@
     "build": "parcel build --public-url . --no-source-maps index.html"
   },
   "dependencies": {
-    "@deepgram/sdk": "^3.3.3", 
-    "@logseq/libs": "^0.0.17"
+    "@deepgram/sdk": "^3.3.3",
+    "@logseq/libs": "^0.2.1"
   },
   "devDependencies": {
-    "parcel": "^2.9.3",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "parcel": "^2.9.3"
   },
   "logseq": {
     "id": "logseq-transcriber",
     "icon": "./icon.png",
+    "main": "dist/index.html",
     "settings": [
       {
         "key": "apiKey",
@@ -32,7 +32,7 @@
         "key": "model",
         "type": "string",
         "title": "Transcription Model",
-        "description": "Model to use (e.g., nova-3, whisper-large). See [Deepgram Models](https://developers.deepgram.com/docs/model) for options.",
+        "description": "Model to use (e.g., nova-3, whisper-large). See [Deepgram Models documentation](https://developers.deepgram.com/docs/model) for options.",
         "default": "nova-3"
       },
       {
@@ -43,7 +43,23 @@
         "default": "auto-detect",
         "enumPicker": "select",
         "enumChoices": [
-          "auto-detect", "en", "es", "fr", "de", "it", "pt", "nl", "hi", "ja", "zh", "ko", "ru", "uk", "sv", "tr", "id"
+          "auto-detect",
+          "en",
+          "es",
+          "fr",
+          "de",
+          "it",
+          "pt",
+          "nl",
+          "hi",
+          "ja",
+          "zh",
+          "ko",
+          "ru",
+          "uk",
+          "sv",
+          "tr",
+          "id"
         ]
       }
     ]
