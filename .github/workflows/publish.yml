@@ -29,20 +29,13 @@ jobs:
       - name: Zip release
         run: zip -r logseq-transcriber-${{ github.ref_name }}.zip dist
 
-      - name: Prepare release notes
-        id: release_notes
-        run: |
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
-          body: ${{ steps.release_notes.outputs.body }}
+          body_path: CHANGELOG.md
           draft: false
           prerelease: false
 
