@@ -4,6 +4,8 @@
 
   If you really like it, you can [☕ buy me a coffee](https://buymeacoffe.com/marijnbent) ❤️.
 
+https://github.com/user-attachments/assets/ed30f10d-c78f-46ef-8ca0-cec8da26f08c
+
 ## Features
 
 - **Inline Transcription**: Adds a “🎙️ Transcribe” button next to audio players in your Logseq blocks.
