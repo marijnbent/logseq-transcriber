@@ -27,12 +27,12 @@ jobs:
         run: npm run build
 
       - name: Zip release
-        run: zip -r logseq-transcriber-${{ github.ref_name }}.zip dist
+        run: zip -r logseq-transcriber-${{ github.ref_name }}.zip dist icon.png package.json index.html README.md
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           bodyFile: CHANGELOG.md
           artifacts: logseq-transcriber-${{ github.ref_name }}.zip
