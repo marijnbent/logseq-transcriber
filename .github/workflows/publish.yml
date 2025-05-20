@@ -27,7 +27,7 @@ jobs:
         run: npm run build
 
       - name: Zip release
-        run: zip -r logseq-transcriber-${{ github.ref_name }}.zip dist icon.png package.json index.html README.md
+        run: zip -r logseq-transcriber-${{ github.ref_name }}.zip RELEASE dist icon.png package.json index.html README.md
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
