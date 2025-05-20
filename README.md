@@ -1,6 +1,8 @@
 # Logseq Transcriber Plugin
 
-Quickly transcribe audio files embedded in your Logseq notes using the Deepgram API. This plugin adds a “Transcribe” button next to audio players, allowing you to get a text version of your audio content inserted directly as a new block.
+  Quickly transcribe audio files embedded in your Logseq notes using the Deepgram API. This plugin adds a “Transcribe” button next to audio players, allowing you to get a text version of your audio content inserted directly as a new block. If you like it, please git it a star on Github [star ![GitHub Repo stars](https://img.shields.io/github/stars/marijnbent/logseq-transcriber?style=social)](https://github.com/marijnbent/logseq-transcriber)!
+
+  If you really like it, you can [☕ buy me a coffee](https://buymeacoffe.com/marijnbent) ❤️.
 
 ## Features
 
@@ -11,30 +13,23 @@ Quickly transcribe audio files embedded in your Logseq notes using the Deepgram 
 
 ## Setup & Configuration
 
-### 1. Install the Plugin
+Download the latest release from the plugin marketplace.
 
-- Download the latest release from the plugin marketplace (once available) or load it as an unpacked plugin.
-- To load unpacked:
-  1. Build the plugin: `npm install && npm run build`
-  2. In Logseq, go to the three-dots menu (…) → **Plugins**
-  3. Click **Load unpacked plugin** and select the plugin’s root directory
+### Configure Settings
 
-### 2. Configure Settings
+Before using, you'll need to configure the plugin settings.
 
-- Go to Logseq Settings (three-dots menu (…) → **Settings** or press `t s`)
-- Navigate to **Plugin Settings**
-- Find **Logseq Transcriber** and configure:
+- Go to the plugin settings:
   - **API Key**: Your Deepgram API Key (from the [Deepgram Console](https://console.deepgram.com/project/_/api-keys))
   - **Transcription Model**: e.g. `nova-3`, `whisper-large` (defaults to `nova-3`)
-  - **Audio Language**: Choose your audio’s BCP-47 code or “Auto-detect” (see [Deepgram Languages](https://developers.deepgram.com/docs/models-languages-overview))
+  - **Audio Language**: Choose a language or “Auto-detect” (see [Deepgram Languages](https://developers.deepgram.com/docs/models-languages-overview))
 
 ## Usage
 
-1. Embed an audio file in a Logseq block (drag-and-drop or `/Upload asset`)
+1. Embed an audio file in a Logseq block
 2. A “🎙️ Transcribe” button appears next to the audio player
 3. Click it—the text changes to “🎙️…” while processing
-4. When done, the transcription is inserted as a new block beneath the audio
-5. You’ll get a success or failure notification
+4. The transcription is inserted as a new block beneath the audio
 
 ## Notes
 

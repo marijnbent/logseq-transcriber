@@ -9,7 +9,6 @@
     "build": "parcel build --public-url . --no-source-maps index.html"
   },
   "dependencies": {
-    "@deepgram/sdk": "^3.3.3",
     "@logseq/libs": "^0.2.1"
   },
   "devDependencies": {

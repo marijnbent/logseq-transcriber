@@ -1,10 +1,11 @@
 import '@logseq/libs';
-import { createClient, DeepgramClient, PrerecordedTranscriptionResponse, PrerecordedTranscriptionOptions } from "@deepgram/sdk";
 import { Buffer } from "buffer";
 import settings from './settings';
 declare const logseq: any;
 
 const PLUGIN_ID = 'logseq-transcriber';
+let apiKeyAlertShown = false;
+let observer: MutationObserver;
 
 console.log(`[${PLUGIN_ID}] Script loaded`);
 
@@ -28,8 +29,15 @@ function getSettings(): PluginSettings {
 
   if (!apiKey || apiKey.trim() === '') {
     console.warn(`[${PLUGIN_ID}] API Key is not set or empty.`);
-    (logseq.App as any).showMsg('Transcription API Key not set. Please configure it in plugin settings.', 'error');
-    (logseq.App as any).openSettingItem(PLUGIN_ID, 'apiKey');
+    if (!apiKeyAlertShown) {
+      (logseq.App as any).showMsg('Deepgram API Key not set. Please configure it in plugin settings.', 'error');
+      (logseq.App as any).openSettingItem(PLUGIN_ID, 'apiKey');
+      apiKeyAlertShown = true;
+      if (observer) {
+        observer.disconnect();
+        console.log(`[${PLUGIN_ID}] MutationObserver disconnected due to missing API key.`);
+      }
+    }
     return { apiKey: null, model, language: undefined };
   }
   console.log(`[${PLUGIN_ID}] API Key found. Model: ${model}, Language Setting: ${languageSetting}`);
@@ -41,56 +49,57 @@ function getSettings(): PluginSettings {
 }
 
 async function transcribeAudioSource(
-    source: { buffer: Buffer, name: string, type?: string },
-    apiKey: string,
-    model: string,
-    language?: string,
-    button?: HTMLButtonElement
+  source: { buffer: Buffer, name: string, type?: string },
+  apiKey: string,
+  model: string,
+  language?: string,
+  button?: HTMLButtonElement
 ): Promise<string | null> {
   console.log(`[${PLUGIN_ID}] transcribeAudioSource called for: ${source.name}, Model: ${model}, Lang: ${language || 'auto-detect'}`);
   if (button) button.textContent = '🎙️...';
 
   try {
-    const deepgram: DeepgramClient = createClient(apiKey);
-    
-    const options: PrerecordedTranscriptionOptions = {
-      model: model,
-      smart_format: true,
-      punctuate: true,
-    };
+    // build query params
+    const params = new URLSearchParams({
+      model,
+      punctuate: 'true',
+      smart_format: 'true',
+      ...(language ? { language } : { detect_language: 'true' })
+    });
+    const url = `https://api.deepgram.com/v1/listen?${params}`;
 
-    if (language) {
-      options.language = language;
-    } else {
-      options.detect_language = true;
-      console.log(`[${PLUGIN_ID}] Language detection enabled.`);
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Token ${apiKey}`,
+        'Content-Type': source.type || 'application/octet-stream'
+      },
+      body: source.buffer
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      console.error(`[${PLUGIN_ID}] Deepgram API error:`, resp.status, resp.statusText, errText);
+      throw new Error(`Deepgram API ${resp.status}: ${resp.statusText}`);
     }
-    console.log(`[${PLUGIN_ID}] Deepgram options:`, options);
 
-    const { result, error }: PrerecordedTranscriptionResponse = await deepgram.listen.prerecorded.transcribeFile(
-      source.buffer,
-      options
-    );
+    const dg = await resp.json() as any;
+    console.log(`[${PLUGIN_ID}] Deepgram API result:`, dg);
 
-    if (error) {
-      console.error(`[${PLUGIN_ID}] Deepgram API error:`, error);
-      throw error;
+    const transcript = dg.results?.channels?.[0]?.alternatives?.[0]?.transcript;
+    if (!transcript) {
+      console.warn(`[${PLUGIN_ID}] No transcript in response.`);
+      throw new Error('No transcription result');
     }
-    console.log(`[${PLUGIN_ID}] Deepgram API result:`, result);
 
-    const transcription = result?.results?.channels[0]?.alternatives[0]?.transcript;
-    if (transcription) {
-      (logseq.App as any).showMsg(`Transcription for "${source.name}" successful!`, 'success');
-      console.log(`[${PLUGIN_ID}] Transcription successful for "${source.name}".`);
-      return transcription;
-    } else {
-      console.warn(`[${PLUGIN_ID}] No transcription result found in Deepgram response.`);
-      throw new Error('No transcription result found from Deepgram.');
-    }
+    (logseq.App as any).showMsg(`Transcription for "${source.name}" successful!`, 'success');
+    return transcript;
+
   } catch (err: any) {
-    console.error(`[${PLUGIN_ID}] Full error in transcribeAudioSource for ${source.name}:`, err);
-    (logseq.App as any).showMsg(`Transcription failed for "${source.name}": ${err.message || 'Unknown error'}`, 'error');
+    console.error(`[${PLUGIN_ID}] transcribeAudioSource failed for ${source.name}:`, err);
+    (logseq.App as any).showMsg(`Transcription failed for "${source.name}": ${err.message}`, 'error');
     return null;
+
   } finally {
     if (button) button.textContent = '🎙️ Transcribe';
   }
@@ -246,7 +255,7 @@ async function main() {
     }
   `);
 
-  const observer = new MutationObserver((mutationsList) => {
+  observer = new MutationObserver((mutationsList) => {
     // Debounce or throttle scanAndAddButtons if it becomes too frequent
     console.log(`[${PLUGIN_ID}] MutationObserver triggered. Mutations:`, mutationsList.length);
     scanAndAddButtons();
@@ -279,6 +288,21 @@ async function main() {
     }
   });
 
+  // Watch for API key setting changes and re-initialize or disconnect the observer accordingly
+  (logseq.App as any).onSettingsChanged(({ key, newValue }) => {
+    if (key === 'apiKey') {
+      const newKey = (newValue as string)?.trim();
+      if (newKey) {
+        apiKeyAlertShown = false;
+        console.log(`[${PLUGIN_ID}] API key set, re-initializing observer.`);
+        setupObserver();
+      } else {
+        console.log(`[${PLUGIN_ID}] API key removed, disconnecting observer.`);
+        observer.disconnect();
+      }
+    }
+  });
+  
   console.log(`[${PLUGIN_ID}] Plugin main function finished setup.`);
 }
 
