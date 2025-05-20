@@ -41,6 +41,13 @@ const settings: SettingSchemaDesc[] = [
       'tr',
       'id'
     ],
+  },
+  {
+    key: 'useCallout',
+    type: 'boolean',
+    title: 'Prefix transcription as callout',
+    description: 'When enabled, transcription will be formatted as a callout block with > prefixes',
+    default: true,
   }
 ];
 

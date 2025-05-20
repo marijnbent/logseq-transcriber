@@ -1,10 +1,10 @@
 {
   "name": "logseq-transcriber",
   "version": "0.2.1",
-  "description": "Transcribe audio files directly within Logseq using a powerful speech-to-text API.",
-  "author": "AI Assistant",
+  "description": "Transcribe audio files directly within Logseq using the Deepgram API.",
+  "author": "Marijn Bent",
   "license": "MIT",
-  "scripts": {
+    "scripts": {
     "dev": "parcel index.html --public-url ./",
     "build": "parcel build --public-url . --no-source-maps index.html"
   },
@@ -17,6 +17,7 @@
   },
   "logseq": {
     "id": "logseq-transcriber",
+    "title": "Audio Transcriber",
     "icon": "./icon.png",
     "main": "dist/index.html"
   }

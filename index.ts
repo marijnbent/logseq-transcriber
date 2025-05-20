@@ -18,6 +18,7 @@ interface PluginSettings {
   apiKey: string | null;
   model: string;
   language: string | undefined;
+  useCallout: boolean;
 }
 
 function getSettings(): PluginSettings {
@@ -26,6 +27,7 @@ function getSettings(): PluginSettings {
   const apiKey = lsSettings.apiKey as string;
   const model = (lsSettings.model as string) || "nova-3";
   const languageSetting = (lsSettings.language as string) || "auto-detect";
+  const useCallout = typeof lsSettings.useCallout === 'boolean' ? lsSettings.useCallout : true;
 
   if (!apiKey || apiKey.trim() === '') {
     console.warn(`[${PLUGIN_ID}] API Key is not set or empty.`);
@@ -38,13 +40,14 @@ function getSettings(): PluginSettings {
         console.log(`[${PLUGIN_ID}] MutationObserver disconnected due to missing API key.`);
       }
     }
-    return { apiKey: null, model, language: undefined };
+    return { apiKey: null, model, language: undefined, useCallout };
   }
   console.log(`[${PLUGIN_ID}] API Key found. Model: ${model}, Language Setting: ${languageSetting}`);
   return {
     apiKey,
     model,
     language: languageSetting === "auto-detect" ? undefined : languageSetting.trim(),
+    useCallout,
   };
 }
 
@@ -168,11 +171,15 @@ function addTranscribeButtonToAudioElement(audioElement: HTMLAudioElement, block
 
       if (transcription) {
         console.log(`[${PLUGIN_ID}] Inserting transcription for ${blockUUID}: "${transcription.substring(0, 50)}..."`);
-        await logseq.Editor.insertBlock(blockUUID, transcription, { sibling: true, focus: true });
+        // Conditionally format as callout or plain based on user setting
+        const textToInsert = currentSettings.useCallout
+          ? '> ' + transcription.replace(/\n/g, '\n> ')
+          : transcription;
+        await logseq.Editor.insertBlock(blockUUID, textToInsert, { sibling: true, focus: true });
       } else {
         console.warn(`[${PLUGIN_ID}] Transcription returned null for ${audioName}.`);
       }
-    } catch (err: any) {
+    } catch (err: any) {e;
         console.error(`[${PLUGIN_ID}] Error in button click handler for ${audioName}:`, err);
         (logseq.App as any).showMsg(`Error transcribing ${audioName}: ${err.message || 'Unknown error'}`, 'error');
         button.textContent = '🎙️ Transcribe'; 
@@ -228,7 +235,6 @@ function scanAndAddButtons() {
 
 async function main() {
   console.log(`[${PLUGIN_ID}] Plugin main function starting.`);
-  (logseq.App as any).showMsg('🎙️ Logseq Transcriber Plugin Loaded');
 
   logseq.provideStyle(`
     .logseq-transcriber-audio-btn {
