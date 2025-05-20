@@ -1,6 +1,6 @@
 # Logseq Transcriber Plugin
 
-  Quickly transcribe audio files embedded in your Logseq notes using the Deepgram API. This plugin adds a “Transcribe” button next to audio players, allowing you to get a text version of your audio content inserted directly as a new block. If you like it, please git it a star on Github [star ![GitHub Repo stars](https://img.shields.io/github/stars/marijnbent/logseq-transcriber?style=social)](https://github.com/marijnbent/logseq-transcriber)!
+  Quickly transcribe audio files embedded in your Logseq notes using the Deepgram API. This plugin adds a “Transcribe” button next to audio players, allowing you to get a text version of your audio content inserted directly as a new block. If you like it, please [give it a star on Github ![GitHub Repo stars](https://img.shields.io/github/stars/marijnbent/logseq-transcriber?style=social)](https://github.com/marijnbent/logseq-transcriber)!
 
   If you really like it, you can [☕ buy me a coffee](https://buymeacoffe.com/marijnbent) ❤️.
 
