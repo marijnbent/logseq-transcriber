@@ -1,6 +1,6 @@
 {
   "name": "logseq-transcriber",
-  "version": "0.2.1",
+  "version": "0.1.0",
   "description": "Transcribe audio files directly within Logseq using the Deepgram API.",
   "author": "Marijn Bent",
   "license": "MIT",
